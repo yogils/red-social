@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlmodel
+psycopg[binary]
+passlib
+pyjwt
+python-multipart
+email-validator
+httpx

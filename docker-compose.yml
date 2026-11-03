@@ -1,0 +1,115 @@
+services:
+  auth-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: unal_auth
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  users-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: unal_users
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5434:5432"
+    volumes:
+      - users_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  notifications-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: unal_notifications
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5435:5432"
+    volumes:
+      - notifications_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./services/auth
+    ports:
+      - "8001:8001"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres@auth-db:5432/unal_auth
+
+  user-service:
+    build: ./services/user
+    ports:
+      - "8002:8002"
+    depends_on:
+      users-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres@users-db:5432/unal_users
+      AUTH_SERVICE_URL: http://auth-service:8001
+    volumes:
+      - ./uploads:/app/uploads
+
+  friends-service:
+    build: ./services/friends
+    ports:
+      - "8003:8003"
+    depends_on:
+      users-db:
+        condition: service_healthy
+      auth-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres@users-db:5432/unal_users
+      AUTH_DATABASE_URL: postgresql://postgres@auth-db:5432/unal_auth
+
+  notifications-service:
+    build: ./services/notifications
+    ports:
+      - "8004:8004"
+    depends_on:
+      notifications-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres@notifications-db:5432/unal_notifications
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - user-service
+      - friends-service
+      - notifications-service
+    volumes:
+      - ./uploads:/app/uploads
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+
+volumes:
+  auth_data:
+  users_data:
+  notifications_data:
