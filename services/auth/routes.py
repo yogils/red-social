@@ -32,10 +32,29 @@ def register(user_data: UserCreate):
         existing = session.exec(select(User).where(User.email == user_data.email)).first()
         if existing:
             raise HTTPException(status_code=400, detail="El correo ya está registrado")
-        
+            
+        existing_username = session.exec(select(User).where(User.username == user_data.username)).first()
+        if existing_username:
+            raise HTTPException(status_code=400, detail="El nombre de usuario ya está en uso")
+
+        if not user_data.accept_terms or not user_data.accept_data_policy:
+            raise HTTPException(status_code=400, detail="Debes aceptar los términos y la política de datos")
+
         user = User(
             email=user_data.email,
             full_name=user_data.full_name,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
+            second_last_name=user_data.second_last_name,
+            username=user_data.username,
+            birth_date=user_data.birth_date,
+            document_type=user_data.document_type,
+            document_number=user_data.document_number,
+            city=user_data.city,
+            phone=user_data.phone,
+            faculty=user_data.faculty,
+            career=user_data.career,
+            bio=user_data.bio,
             hashed_password=pwd_context.hash(user_data.password),
         )
         session.add(user)
@@ -46,7 +65,10 @@ def register(user_data: UserCreate):
             with httpx.Client() as client:
                 client.post("http://user-service:8002/profiles", json={
                     "id": user.id,
-                    "full_name": user.full_name
+                    "full_name": user.full_name,
+                    "career": user.career,
+                    "bio": user.bio,
+                    "faculty": user.faculty
                 })
         except Exception as e:
             print(f"Advertencia: No se pudo crear el perfil en el User Service: {e}")

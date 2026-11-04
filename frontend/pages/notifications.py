@@ -24,24 +24,37 @@ async def notifications_page():
                     if not notifs:
                         ui.label('No tienes notificaciones por ahora.').classes('text-gray-500 text-center w-full mt-8')
                     for n in notifs:
-                        color = 'bg-gray-100 dark:bg-gray-800' if n['is_read'] else 'bg-blue-50 dark:bg-blue-900'
-                        with ui.card().classes(f'w-full {color} mt-2 rounded-xl shadow-sm'):
-                            ui.label(n['message']).classes('font-bold')
+                        color = 'bg-white dark:bg-gray-800' if n['is_read'] else 'bg-blue-50 dark:bg-blue-900'
+                        with ui.card().classes(f'w-full {color} mt-2 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4'):
+                            with ui.row().classes('items-center gap-2'):
+                                if n['type'] == 'friend_request':
+                                    ui.icon('person_add', color='primary').classes('text-xl')
+                                elif n['type'] == 'friend_accept':
+                                    ui.icon('check_circle', color='green').classes('text-xl')
+                                elif n['type'] == 'message':
+                                    ui.icon('chat', color='blue').classes('text-xl')
+                                elif n['type'] == 'new_post':
+                                    ui.icon('newspaper', color='orange').classes('text-xl')
+                                else:
+                                    ui.icon('notifications', color='gray').classes('text-xl')
+                                
+                                ui.label(n['message']).classes('font-bold text-gray-800 dark:text-gray-200')
                             
                             if n['type'] == 'friend_request' and n.get('related_id'):
-                                async def accept(req_sender_id=n['related_id']):
+                                async def accept(req_sender_id=n['related_id'], notif_id=n['id']):
                                     res_req = await api_get(f"/friends/requests/{current_user_id}")
                                     if res_req.status_code == 200:
                                         for req in res_req.json():
                                             if req['sender_id'] == req_sender_id:
                                                 await api_post(f"/friends/accept/{req['request_id']}")
+                                                await api_post(f"/notifications/{notif_id}/mark-read")
                                                 ui.notify('Amistad aceptada', color='positive')
                                                 await load_notifs()
                                                 return
                                 
-                                ui.button('Aceptar solicitud', on_click=accept).props('flat color=positive mt-2 rounded')
+                                ui.button('Aceptar solicitud', on_click=accept).props('flat color=positive mt-2 rounded font-bold')
                             
-                            ui.label(n['created_at'][:16].replace('T', ' ')).classes('text-xs text-gray-500')
+                            ui.label(n['created_at'][:16].replace('T', ' ')).classes('text-xs text-gray-500 mt-2')
 
         await api_post(f"/notifications/{current_user_id}/read")
         await load_notifs()

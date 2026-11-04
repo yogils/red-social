@@ -6,6 +6,7 @@ class AuthUser(SQLModel, table=True):
     id: int = Field(primary_key=True)
     email: str
     full_name: str
+    faculty: str | None = None
 
 class Friendship(SQLModel, table=True):
     __tablename__ = "friendships"

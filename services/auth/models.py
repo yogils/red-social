@@ -5,6 +5,18 @@ from sqlmodel import SQLModel, Field
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True)
     full_name: str
+    first_name: str
+    last_name: str
+    second_last_name: str | None = None
+    username: str = Field(unique=True, index=True)
+    birth_date: str
+    document_type: str
+    document_number: str
+    city: str
+    phone: str
+    faculty: str
+    career: str | None = None
+    bio: str | None = None
 
     @field_validator("email")
     @classmethod
@@ -15,6 +27,9 @@ class UserBase(SQLModel):
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8)
+    accept_terms: bool
+    accept_data_policy: bool
+    accept_commercial: bool = False
 
 class User(UserBase, table=True):
     __tablename__ = "users"

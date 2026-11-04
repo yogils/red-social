@@ -31,7 +31,7 @@ def search_friends(query: str, current_user_id: int):
                 if friendship.status == "pending" and friendship.user_id_1 == current_user_id:
                     status = "sent"
             
-            result.append({"id": u.id, "email": u.email, "status": status})
+            result.append({"id": u.id, "email": u.email, "full_name": u.full_name, "faculty": u.faculty, "status": status})
         return result
 
 @router.post("/request")
@@ -68,7 +68,7 @@ def get_pending_requests(user_id: int):
         for req in requests:
             sender = auth_session.get(AuthUser, req.user_id_1)
             if sender:
-                result.append({"request_id": req.id, "sender_id": sender.id, "sender_name": sender.email})
+                result.append({"request_id": req.id, "sender_id": sender.id, "sender_name": sender.full_name, "sender_email": sender.email, "sender_faculty": sender.faculty})
         return result
 
 @router.post("/accept/{request_id}")
@@ -80,7 +80,41 @@ def accept_friend_request(request_id: int):
         req.status = "accepted"
         session.add(req)
         session.commit()
+        
+        sender_id = req.user_id_1
+        
+        try:
+            with httpx.Client() as client:
+                client.post(
+                    f"http://notifications-service:8004/notify",
+                    params={
+                        "user_id": sender_id,
+                        "type": "friend_accept",
+                        "message": "Tu solicitud de amistad ha sido aceptada."
+                    }
+                )
+        except Exception as e:
+            print(f"Error enviando notificación de aceptación: {e}")
+
         return {"msg": "Amistad aceptada"}
+
+@router.delete("/remove/{friend_id}")
+def remove_friend(friend_id: int, user_id: int):
+    with Session(users_engine) as session:
+        friendship = session.exec(
+            select(Friendship).where(
+                ((Friendship.user_id_1 == user_id) & (Friendship.user_id_2 == friend_id)) |
+                ((Friendship.user_id_1 == friend_id) & (Friendship.user_id_2 == user_id)),
+                Friendship.status == "accepted"
+            )
+        ).first()
+        
+        if not friendship:
+            raise HTTPException(status_code=404, detail="No son amigos")
+        
+        session.delete(friendship)
+        session.commit()
+        return {"msg": "Amigo eliminado"}
 
 @router.get("/list/{user_id}")
 def get_friends(user_id: int):
@@ -100,4 +134,51 @@ def get_friends(user_id: int):
             return []
             
         friends = auth_session.exec(select(AuthUser).where(AuthUser.id.in_(friend_ids))).all()
-        return [{"id": f.id, "email": f.email} for f in friends]
+        return [{"id": f.id, "email": f.email, "full_name": f.full_name, "faculty": f.faculty} for f in friends]
+
+@router.get("/suggestions/{user_id}")
+def get_friend_suggestions(user_id: int):
+    with Session(users_engine) as session:
+        my_friendships = session.exec(
+            select(Friendship).where(
+                ((Friendship.user_id_1 == user_id) | (Friendship.user_id_2 == user_id)),
+                Friendship.status == "accepted"
+            )
+        ).all()
+        
+        my_friend_ids = set()
+        for f in my_friendships:
+            my_friend_ids.add(f.user_id_2 if f.user_id_1 == user_id else f.user_id_1)
+        
+        if not my_friend_ids:
+            return []
+
+        suggestions = {}
+        for friend_id in my_friend_ids:
+            friends_of_friend = session.exec(
+                select(Friendship).where(
+                    ((Friendship.user_id_1 == friend_id) | (Friendship.user_id_2 == friend_id)),
+                    Friendship.status == "accepted"
+                )
+            ).all()
+            
+            for fof in friends_of_friend:
+                candidate_id = fof.user_id_2 if fof.user_id_1 == friend_id else fof.user_id_1
+                if candidate_id != user_id and candidate_id not in my_friend_ids:
+                    suggestions[candidate_id] = suggestions.get(candidate_id, 0) + 1
+        
+        sorted_suggestions = sorted(suggestions.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        with Session(auth_engine) as auth_session:
+            result = []
+            for cand_id, mutual_count in sorted_suggestions:
+                user_data = auth_session.get(AuthUser, cand_id)
+                if user_data:
+                    result.append({
+                        "id": user_data.id,
+                        "full_name": user_data.full_name,
+                        "email": user_data.email,
+                        "faculty": user_data.faculty,
+                        "mutual_friends": mutual_count
+                    })
+            return result

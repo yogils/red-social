@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlmodel import Session, select
 from database import engine
 from models import Notification
@@ -36,3 +36,14 @@ def count_unread(user_id: int):
     with Session(engine) as session:
         count = len(session.exec(select(Notification).where(Notification.user_id == user_id, Notification.is_read == False)).all())
         return {"count": count}
+
+@router.post("/{notification_id}/mark-read")
+def mark_single_read(notification_id: int):
+    with Session(engine) as session:
+        notif = session.get(Notification, notification_id)
+        if not notif:
+            raise HTTPException(status_code=404, detail="Notificación no encontrada")
+        notif.is_read = True
+        session.add(notif)
+        session.commit()
+        return {"msg": "Notificación marcada como leída"}

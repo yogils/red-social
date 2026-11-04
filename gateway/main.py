@@ -51,7 +51,7 @@ async def users_proxy(path: str, request: Request, token: str = Depends(oauth2_s
         )
         return JSONResponse(content=resp.json(), status_code=resp.status_code)
 
-@app.api_route("/friends/{path:path}", methods=["GET", "POST"])
+@app.api_route("/friends/{path:path}", methods=["GET", "POST", "DELETE"])
 async def friends_proxy(path: str, request: Request, token: str = Depends(oauth2_scheme)):
     async with httpx.AsyncClient() as client:
         body = await request.body() if request.method == "POST" else None
@@ -65,9 +65,7 @@ async def friends_proxy(path: str, request: Request, token: str = Depends(oauth2
         )
         return JSONResponse(content=resp.json(), status_code=resp.status_code)
 
-
-
-@app.api_route("/notifications/{path:path}", methods=["GET", "POST"])
+@app.api_route("/notifications/{path:path}", methods=["GET", "POST", "DELETE"])
 async def notifications_proxy(path: str, request: Request, token: str = Depends(oauth2_scheme)):
     async with httpx.AsyncClient() as client:
         body = await request.body() if request.method == "POST" else None

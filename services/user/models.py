@@ -9,6 +9,8 @@ class UserProfile(SQLModel, table=True):
     career: str | None = None
     bio: str | None = None 
     profile_picture_url: str | None = None
+    cover_picture_url: str | None = None
+    faculty: str | None = None
 
 class Post(SQLModel, table=True):
     __tablename__ = "posts"
@@ -17,6 +19,7 @@ class Post(SQLModel, table=True):
     author_name: str
     content: str
     image_url: str | None = None
+    reports: int = Field(default=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Reaction(SQLModel, table=True):
@@ -52,3 +55,7 @@ class ReactionCreate(BaseModel):
 class UserProfileCreate(BaseModel):
     id: int
     full_name: str
+    career: str | None = None
+    bio: str | None = None
+    cover_picture_url: str | None = None
+    faculty: str | None = None

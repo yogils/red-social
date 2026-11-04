@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from sqlmodel import Session, select
 from database import engine
 from models import Post, Reaction, PostCreate, ReactionCreate
@@ -25,7 +25,7 @@ def get_posts(user_id: int = Query(None), only_friends: bool = Query(False)):
             allowed_authors = [user_id]
 
     with Session(engine) as session:
-        query = select(Post).order_by(Post.created_at.desc())
+        query = select(Post).where(Post.reports < 3).order_by(Post.created_at.desc())
         
         if allowed_authors is not None:
             query = query.where(Post.author_id.in_(allowed_authors))
@@ -87,3 +87,27 @@ def react_to_post(post_id: int, user_id: int, reaction_data: ReactionCreate):
         likes = len(session.exec(select(Reaction).where(Reaction.post_id == post_id, Reaction.reaction_type == "like")).all())
         dislikes = len(session.exec(select(Reaction).where(Reaction.post_id == post_id, Reaction.reaction_type == "dislike")).all())
         return {"likes_count": likes, "dislikes_count": dislikes}
+
+@router.post("/posts/{post_id}/report")
+def report_post(post_id: int):
+    with Session(engine) as session:
+        post = session.get(Post, post_id)
+        if not post:
+            raise HTTPException(status_code=404, detail="Post no encontrado")
+        post.reports += 1
+        session.add(post)
+        session.commit()
+        return {"msg": "Reportado", "reports": post.reports}
+
+@router.delete("/posts/{post_id}")
+def delete_post(post_id: int, user_id: int):
+    with Session(engine) as session:
+        post = session.get(Post, post_id)
+        if not post:
+            raise HTTPException(status_code=404, detail="Post no encontrado")
+        if post.author_id != user_id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para eliminar este post")
+        
+        session.delete(post)
+        session.commit()
+        return {"msg": "Post eliminado"}
