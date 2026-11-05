@@ -162,11 +162,53 @@ async def my_profile():
                                         ui.image(f"http://localhost:8000{post['image_url']}").classes('w-full object-cover')
 
                 elif active_tab['value'] == 'info':
-                    with ui.card().classes('w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'):
-                        ui.label('Información Personal').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
-                        ui.label(f"Nombre completo: {profile_data.get('full_name', 'No especificado')}").classes('text-md text-gray-700 dark:text-gray-300 mb-2')
-                        ui.label(f"Carrera: {profile_data.get('career', 'No especificada')}").classes('text-md text-gray-700 dark:text-gray-300 mb-2')
-                        ui.label(f"Biografía: {profile_data.get('bio', 'Sin biografía')}").classes('text-md text-gray-700 dark:text-gray-300')
+                    info_section = {'value': 'datos'}
+                    
+                    with ui.row().classes('w-full gap-6'):
+                        with ui.column().classes('w-full md:w-1/3 gap-2'):
+                            with ui.card().classes('w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4'):
+                                ui.label('Información').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
+                                
+                                async def change_info_section(sec):
+                                    info_section['value'] = sec
+                                    await render_info_content()
+                                
+                                ui.button('Datos personales', on_click=lambda: change_info_section('datos')).props('flat no-caps align=left').classes('w-full text-left bg-blue-50 text-blue-600 font-medium')
+                                ui.button('Formación académica', on_click=lambda: change_info_section('formacion')).props('flat no-caps align=left').classes('w-full text-left text-gray-600')
+                                ui.button('Intereses', on_click=lambda: change_info_section('intereses')).props('flat no-caps align=left').classes('w-full text-left text-gray-600')
+                                ui.button('Viajes', on_click=lambda: change_info_section('viajes')).props('flat no-caps align=left').classes('w-full text-left text-gray-600')
+
+                        with ui.column().classes('w-full md:w-2/3'):
+                            info_content = ui.column().classes('w-full')
+                            
+                            async def render_info_content():
+                                info_content.clear()
+                                with info_content:
+                                    with ui.card().classes('w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'):
+                                        if info_section['value'] == 'datos':
+                                            ui.label('Datos personales').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
+                                            ui.label(f"Nombre completo: {profile_data.get('full_name', 'No especificado')}").classes('text-md text-gray-700 dark:text-gray-300 mb-2')
+                                            ui.label(f"Carrera: {profile_data.get('career', 'No especificada')}").classes('text-md text-gray-700 dark:text-gray-300 mb-2')
+                                            ui.label(f"Facultad: {profile_data.get('faculty', 'No especificada')}").classes('text-md text-gray-700 dark:text-gray-300 mb-2')
+                                            ui.label(f"Biografía: {profile_data.get('bio', 'Sin biografía')}").classes('text-md text-gray-700 dark:text-gray-300')
+                                            
+                                            ui.separator().classes('my-4')
+                                            ui.button('Editar Información', icon='edit', on_click=lambda: ui.notify('Edición en construcción')).props('flat color=primary')
+
+                                        elif info_section['value'] == 'formacion':
+                                            ui.label('Formación académica').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
+                                            ui.label(f"Universidad Nacional de Colombia").classes('text-md text-gray-700 dark:text-gray-300 mb-2')
+                                            ui.label(f"Carrera: {profile_data.get('career', 'No especificada')}").classes('text-md text-gray-700 dark:text-gray-300')
+                                            
+                                        elif info_section['value'] == 'intereses':
+                                            ui.label('Intereses').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
+                                            ui.label('Aún no has agregado intereses.').classes('text-gray-500')
+                                            
+                                        elif info_section['value'] == 'viajes':
+                                            ui.label('Viajes').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
+                                            ui.label('Aún no has agregado viajes.').classes('text-gray-500')
+                            
+                            await render_info_content()
 
                 elif active_tab['value'] == 'friends':
                     with ui.card().classes('w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'):
@@ -183,7 +225,24 @@ async def my_profile():
 
                 elif active_tab['value'] == 'photos':
                     with ui.card().classes('w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'):
-                        ui.label('Mis Fotos').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
+                        with ui.row().classes('w-full justify-between items-center mb-4'):
+                            ui.label('Mis Fotos').classes('text-xl font-bold text-gray-900 dark:text-white')
+                            
+                            async def handle_photo_upload(e):
+                                file_bytes = await e.file.read()
+                                res_up = await api_post("/users/upload", files={'file': (e.file.name, file_bytes, e.file.content_type)})
+                                if res_up.status_code == 200:
+                                    img_url = res_up.json()['image_url']
+                                    await api_post("/users/posts", json={
+                                        "author_id": current_user_id, "author_name": user_email,
+                                        "content": "", "image_url": img_url
+                                    })
+                                    ui.notify('Foto subida correctamente', color='positive')
+                                    await render_content()
+
+                            photo_uploader = ui.upload(on_upload=handle_photo_upload, auto_upload=True).props('accept="image/*"').classes('hidden')
+                            ui.button('Subir Foto', icon='add_a_photo', on_click=lambda: photo_uploader.run_method('pickFiles')).props('unelevated rounded color=primary size=sm')
+
                         res_posts = await api_get("/users/posts", params={"user_id": current_user_id})
                         if res_posts.status_code == 200:
                             photos = [p for p in res_posts.json() if p['author_id'] == current_user_id and p.get('image_url')]
@@ -191,12 +250,46 @@ async def my_profile():
                                 ui.label('No has subido fotos aún.').classes('text-gray-500')
                             with ui.row().classes('gap-4 flex-wrap'):
                                 for p in photos:
-                                    ui.image(f"http://localhost:8000{p['image_url']}").classes('w-48 h-48 object-cover rounded-lg shadow-md')
+                                    ui.image(f"http://localhost:8000{p['image_url']}").classes('w-48 h-48 object-cover rounded-lg shadow-md cursor-pointer').on('click', lambda u=p['image_url']: show_photo(u))
 
                 elif active_tab['value'] == 'reels':
                     with ui.card().classes('w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'):
-                        ui.label('Mis Reels').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
-                        ui.label('Aún no has subido ningún Reel.').classes('text-gray-500')
+                        with ui.row().classes('w-full justify-between items-center mb-4'):
+                            ui.label('Mis Reels').classes('text-xl font-bold text-gray-900 dark:text-white')
+                            
+                            async def handle_reel_upload(e):
+                                file_bytes = await e.file.read()
+                                res_up = await api_post("/users/upload", files={'file': (e.file.name, file_bytes, e.file.content_type)})
+                                if res_up.status_code == 200:
+                                    data = res_up.json()
+                                    if data['file_type'] == 'video':
+                                        await api_post("/users/posts", json={
+                                            "author_id": current_user_id, "author_name": user_email,
+                                            "content": "", "image_url": data['file_url']
+                                        })
+                                        ui.notify('Reel subido correctamente', color='positive')
+                                        await render_content()
+                                    else:
+                                        ui.notify('Por favor sube un archivo de video (.mp4)', color='warning')
+
+                            reel_uploader = ui.upload(on_upload=handle_reel_upload, auto_upload=True).props('accept="video/*"').classes('hidden')
+                            ui.button('Subir Reel', icon='movie', on_click=lambda: reel_uploader.run_method('pickFiles')).props('unelevated rounded color=primary size=sm')
+
+                        res_posts = await api_get("/users/posts", params={"user_id": current_user_id})
+                        if res_posts.status_code == 200:
+                            reels = [p for p in res_posts.json() if p['author_id'] == current_user_id and p.get('image_url') and p['image_url'].lower().endswith(('.mp4', '.mov'))]
+                            if not reels:
+                                ui.label('No has subido Reels aún.').classes('text-gray-500')
+                            with ui.row().classes('gap-4 flex-wrap'):
+                                for r in reels:
+                                    ui.video(f"http://localhost:8000{r['image_url']}").classes('w-64 h-96 object-cover rounded-lg shadow-md')
+
+        async def show_photo(img_url):
+            with ui.dialog() as dialog, ui.card().classes('w-full max-w-4xl p-0 overflow-hidden'):
+                ui.image(f"http://localhost:8000{img_url}").classes('w-full h-auto object-contain')
+                with ui.row().classes('w-full justify-end p-2 bg-gray-100'):
+                    ui.button('Cerrar', on_click=dialog.close).props('flat color=primary')
+            dialog.open()
 
         async def change_tab(tab_name):
             active_tab['value'] = tab_name
@@ -333,12 +426,19 @@ async def user_profile(user_id: int):
                                 ui.label('No ha subido fotos aún.').classes('text-gray-500')
                             with ui.row().classes('gap-4 flex-wrap'):
                                 for p in photos:
-                                    ui.image(f"http://localhost:8000{p['image_url']}").classes('w-48 h-48 object-cover rounded-lg shadow-md')
+                                    ui.image(f"http://localhost:8000{p['image_url']}").classes('w-48 h-48 object-cover rounded-lg shadow-md cursor-pointer').on('click', lambda u=p['image_url']: show_photo(u))
 
                 elif active_tab['value'] == 'reels':
                     with ui.card().classes('w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'):
                         ui.label('Reels').classes('text-xl font-bold mb-4 text-gray-900 dark:text-white')
                         ui.label('Este usuario no ha subido Reels.').classes('text-gray-500')
+
+        async def show_photo(img_url):
+            with ui.dialog() as dialog, ui.card().classes('w-full max-w-4xl p-0 overflow-hidden'):
+                ui.image(f"http://localhost:8000{img_url}").classes('w-full h-auto object-contain')
+                with ui.row().classes('w-full justify-end p-2 bg-gray-100'):
+                    ui.button('Cerrar', on_click=dialog.close).props('flat color=primary')
+            dialog.open()
 
         async def change_tab(tab_name):
             active_tab['value'] = tab_name
