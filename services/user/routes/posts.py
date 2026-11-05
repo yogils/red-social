@@ -2,7 +2,7 @@ import httpx
 from fastapi import APIRouter, Query, HTTPException
 from sqlmodel import Session, select
 from database import engine
-from models import Post, Reaction, PostCreate, ReactionCreate
+from models import Post, Reaction, PostCreate, ReactionCreate, Comment
 
 router = APIRouter()
 
@@ -36,11 +36,12 @@ def get_posts(user_id: int = Query(None), only_friends: bool = Query(False)):
         for post in posts:
             likes = len(session.exec(select(Reaction).where(Reaction.post_id == post.id, Reaction.reaction_type == "like")).all())
             dislikes = len(session.exec(select(Reaction).where(Reaction.post_id == post.id, Reaction.reaction_type == "dislike")).all())
+            comments_count = len(session.exec(select(Comment).where(Comment.post_id == post.id)).all())
             user_reaction = None
             if user_id:
                 reaction = session.exec(select(Reaction).where(Reaction.post_id == post.id, Reaction.user_id == user_id)).first()
                 if reaction: user_reaction = reaction.reaction_type
-            result.append({**post.model_dump(), "likes_count": likes, "dislikes_count": dislikes, "user_reaction": user_reaction})
+            result.append({**post.model_dump(), "likes_count": likes, "dislikes_count": dislikes, "user_reaction": user_reaction, "comments_count": comments_count})
         return result
 
 

@@ -47,3 +47,12 @@ def mark_single_read(notification_id: int):
         session.add(notif)
         session.commit()
         return {"msg": "Notificación marcada como leída"}
+
+@router.delete("/{notification_id}")
+def delete_notification(notification_id: int):
+    with Session(engine) as session:
+        notif = session.get(Notification, notification_id)
+        if notif:
+            session.delete(notif)
+            session.commit()
+        return {"msg": "Notificación eliminada"}

@@ -1,10 +1,14 @@
-import httpx
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, UploadFile, File
 from sqlmodel import Session, select
 from database import engine
 from models import Message, MessageCreate
+import shutil
+import uuid
+import os
 
 router = APIRouter()
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.get("/messages/{user_id}")
 def get_messages(user_id: int, other_id: int = Query(...)):
@@ -24,13 +28,6 @@ def send_message(msg_data: MessageCreate):
         session.add(new_msg)
         session.commit()
         session.refresh(new_msg)
-        
-        try:
-            with httpx.Client() as client:
-                client.post(f"http://notifications-service:8004/notify?user_id={msg_data.receiver_id}&type=message&message=Has recibido un nuevo mensaje")
-        except Exception as e:
-            print(f"Error enviando notificación: {e}")
-
         return new_msg
 
 @router.get("/messages/unread/{user_id}")
@@ -48,3 +45,20 @@ def mark_messages_read(user_id: int, sender_id: int):
             session.add(m)
         session.commit()
         return {"msg": "Mensajes leídos"}
+
+@router.post("/upload")
+async def upload_chat_file(file: UploadFile = File(...)):
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    file_type = "image"
+    if file_extension.lower() in [".mp4", ".mov", ".avi"]:
+        file_type = "video"
+    elif file_extension.lower() in [".mp3", ".wav", ".ogg", ".m4a"]:
+        file_type = "audio"
+        
+    return {"file_url": f"/uploads/{unique_filename}", "file_type": file_type}

@@ -124,11 +124,11 @@ async def friends_page():
                                 with ui.row().classes('items-center gap-3'):
                                     ui.avatar(f['full_name'][0].upper(), color='primary', text_color='white')
                                     with ui.column().classes('gap-0'):
-                                        ui.link(f['full_name'], f"/profile/{f['id']}").classes('font-medium text-gray-800 dark:text-gray-200 no-underline hover:underline')
+                                        ui.button(f['full_name'], on_click=lambda u=f: ui.navigate.to(f"/profile/{u['id']}")).props('flat no-caps color=primary').classes('font-medium text-left')
                                         ui.label(f['email']).classes('text-xs text-gray-500')
                                 
                                 with ui.row().classes('gap-2'):
-                                    ui.button('Chatear', icon='chat', on_click=lambda u=f: ui.navigate.to(f'/chat?user_id={u["id"]}')).props('flat rounded color=primary size=sm')
+                                    ui.button('Chatear', icon='chat', on_click=lambda u=f: ui.navigate.to('/chat')).props('flat rounded color=primary size=sm')
                                     
                                     async def remove_friend(friend_id=f['id']):
                                         async with httpx.AsyncClient() as client:

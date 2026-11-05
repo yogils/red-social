@@ -34,8 +34,19 @@ class Message(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     sender_id: int = Field(index=True)
     receiver_id: int = Field(index=True)
-    content: str
+    content: str | None = None
+    file_url: str | None = None
+    file_type: str | None = None
     is_read: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Comment(SQLModel, table=True):
+    __tablename__ = "comments"
+    id: int | None = Field(default=None, primary_key=True)
+    post_id: int = Field(foreign_key="posts.id", index=True)
+    author_id: int = Field(index=True)
+    author_name: str
+    content: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PostCreate(BaseModel):
@@ -47,7 +58,9 @@ class PostCreate(BaseModel):
 class MessageCreate(BaseModel):
     sender_id: int
     receiver_id: int
-    content: str
+    content: str | None = None
+    file_url: str | None = None
+    file_type: str | None = None
 
 class ReactionCreate(BaseModel):
     reaction_type: str
@@ -59,3 +72,8 @@ class UserProfileCreate(BaseModel):
     bio: str | None = None
     cover_picture_url: str | None = None
     faculty: str | None = None
+
+class CommentCreate(BaseModel):
+    author_id: int
+    author_name: str
+    content: str

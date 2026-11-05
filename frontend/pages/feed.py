@@ -113,6 +113,11 @@ async def feed_page():
                                     dislike_color = 'blue' if post['user_reaction'] == 'dislike' else 'gray-500'
                                     ui.button(f"{post['dislikes_count']}", icon='thumb_down', on_click=lambda p=post: handle_reaction(p['id'], 'dislike')).props(f'flat round color={dislike_color} size=sm no-caps')
 
+                                    async def go_to_post(p_id=post['id']):
+                                        ui.navigate.to(f'/post/{p_id}')
+
+                                    ui.button(f"{post.get('comments_count', 0)}", icon='comment', on_click=go_to_post).props('flat round color=gray-500 size=sm no-caps')
+
                                 async def copy_link(p_id=post['id']):
                                     ui.clipboard.write(f"http://localhost:3000/feed#post-{p_id}")
                                     ui.notify('¡Enlace copiado!', color='positive')

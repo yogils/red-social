@@ -78,3 +78,17 @@ async def notifications_proxy(path: str, request: Request, token: str = Depends(
             headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
         )
         return JSONResponse(content=resp.json(), status_code=resp.status_code)
+
+@app.api_route("/profiles/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def profiles_proxy(path: str, request: Request, token: str = Depends(oauth2_scheme)):
+    async with httpx.AsyncClient() as client:
+        body = await request.body() if request.method in ["POST", "PUT"] else None
+        params = dict(request.query_params)
+        resp = await client.request(
+            method=request.method,
+            url=f"{USER_SERVICE}/profiles/{path}",
+            content=body,
+            params=params,
+            headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
+        )
+        return JSONResponse(content=resp.json(), status_code=resp.status_code)

@@ -1,5 +1,5 @@
 from nicegui import ui, app
-from pages import auth, feed, friends, chat, profile, notifications
+from pages import auth, feed, friends, chat, profile, notifications, post_detail, settings
 
 app.add_static_files('/static', 'static')
 

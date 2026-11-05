@@ -50,9 +50,21 @@ def send_friend_request(sender_id: int, receiver_id: int):
         session.add(new_req)
         session.commit()
         
+        with Session(auth_engine) as auth_session:
+            sender = auth_session.get(AuthUser, sender_id)
+            sender_name = sender.full_name if sender else "Alguien"
+
         try:
             with httpx.Client() as client:
-                client.post(f"http://notifications-service:8004/notify?user_id={receiver_id}&type=friend_request&message=Tienes una nueva solicitud de amistad&related_id={sender_id}")
+                client.post(
+                    f"http://notifications-service:8004/notify",
+                    params={
+                        "user_id": receiver_id,
+                        "type": "friend_request",
+                        "message": f"{sender_name} te ha enviado una solicitud de amistad.",
+                        "related_id": sender_id
+                    }
+                )
         except Exception as e:
             print(f"Error enviando notificación: {e}")
 

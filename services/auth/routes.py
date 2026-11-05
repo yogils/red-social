@@ -40,9 +40,11 @@ def register(user_data: UserCreate):
         if not user_data.accept_terms or not user_data.accept_data_policy:
             raise HTTPException(status_code=400, detail="Debes aceptar los términos y la política de datos")
 
+        full_name = f"{user_data.first_name} {user_data.last_name} {user_data.second_last_name or ''}".strip()
+
         user = User(
             email=user_data.email,
-            full_name=user_data.full_name,
+            full_name=full_name,
             first_name=user_data.first_name,
             last_name=user_data.last_name,
             second_last_name=user_data.second_last_name,
