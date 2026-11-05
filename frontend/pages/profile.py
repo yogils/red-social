@@ -60,6 +60,14 @@ async def my_profile():
             pfp_uploader = ui.upload(on_upload=handle_pfp, auto_upload=True).classes('hidden')
 
         active_tab = {'value': 'todo'}
+
+        with ui.row().classes('w-full px-4 md:px-12 mt-6 border-b border-gray-300 dark:border-gray-700 gap-6'):
+            tab_todo = ui.label('Todo').classes('text-md font-bold text-blue-600 border-b-2 border-blue-600 pb-2 cursor-pointer')
+            tab_info = ui.label('Información').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+            tab_friends = ui.label('Amigos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+            tab_photos = ui.label('Fotos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+            tab_reels = ui.label('Reels').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+
         content_container = ui.column().classes('w-full px-4 md:px-12 mt-6')
 
         async def render_content():
@@ -169,7 +177,7 @@ async def my_profile():
                             if not amigos:
                                 ui.label('No tienes amigos aún.').classes('text-gray-500')
                             for amigo in amigos:
-                                with ui.row().classes('items-center gap-3 p-2 border-b border-gray-100 dark:border-gray-700'):
+                                with ui.row().classes('items-center gap-3 p-2 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50').on('click', lambda u=amigo: ui.navigate.to(f'/profile/{u["id"]}')):
                                     ui.avatar(amigo['full_name'][0].upper(), color='primary', text_color='white')
                                     ui.label(amigo['full_name']).classes('text-md text-gray-800 dark:text-gray-200')
 
@@ -200,12 +208,11 @@ async def my_profile():
                     tab_el.classes(add='text-gray-500', remove='text-blue-600 border-b-2 border-blue-600')
             await render_content()
 
-        with ui.row().classes('w-full px-4 md:px-12 mt-6 border-b border-gray-300 dark:border-gray-700 gap-6'):
-            tab_todo = ui.label('Todo').classes('text-md font-bold text-blue-600 border-b-2 border-blue-600 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('todo')))
-            tab_info = ui.label('Información').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('info')))
-            tab_friends = ui.label('Amigos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('friends')))
-            tab_photos = ui.label('Fotos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('photos')))
-            tab_reels = ui.label('Reels').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('reels')))
+        tab_todo.on('click', lambda: asyncio.create_task(change_tab('todo')))
+        tab_info.on('click', lambda: asyncio.create_task(change_tab('info')))
+        tab_friends.on('click', lambda: asyncio.create_task(change_tab('friends')))
+        tab_photos.on('click', lambda: asyncio.create_task(change_tab('photos')))
+        tab_reels.on('click', lambda: asyncio.create_task(change_tab('reels')))
 
         await render_content()
 
@@ -257,6 +264,14 @@ async def user_profile(user_id: int):
                 ui.button('Enviar mensaje', icon='chat', on_click=lambda: ui.navigate.to(f'/chat?user_id={user_id}')).props('unelevated rounded color=primary')
 
         active_tab = {'value': 'todo'}
+
+        with ui.row().classes('w-full px-4 md:px-12 mt-6 border-b border-gray-300 dark:border-gray-700 gap-6'):
+            tab_todo = ui.label('Todo').classes('text-md font-bold text-blue-600 border-b-2 border-blue-600 pb-2 cursor-pointer')
+            tab_info = ui.label('Información').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+            tab_friends = ui.label('Amigos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+            tab_photos = ui.label('Fotos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+            tab_reels = ui.label('Reels').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer')
+
         content_container = ui.column().classes('w-full px-4 md:px-12 mt-6')
 
         async def render_content():
@@ -304,7 +319,7 @@ async def user_profile(user_id: int):
                             if not amigos:
                                 ui.label('No tiene amigos aún.').classes('text-gray-500')
                             for amigo in amigos:
-                                with ui.row().classes('items-center gap-3 p-2 border-b border-gray-100 dark:border-gray-700'):
+                                with ui.row().classes('items-center gap-3 p-2 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50').on('click', lambda u=amigo: ui.navigate.to(f'/profile/{u["id"]}')):
                                     ui.avatar(amigo['full_name'][0].upper(), color='primary', text_color='white')
                                     ui.label(amigo['full_name']).classes('text-md text-gray-800 dark:text-gray-200')
 
@@ -335,11 +350,10 @@ async def user_profile(user_id: int):
                     tab_el.classes(add='text-gray-500', remove='text-blue-600 border-b-2 border-blue-600')
             await render_content()
 
-        with ui.row().classes('w-full px-4 md:px-12 mt-6 border-b border-gray-300 dark:border-gray-700 gap-6'):
-            tab_todo = ui.label('Todo').classes('text-md font-bold text-blue-600 border-b-2 border-blue-600 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('todo')))
-            tab_info = ui.label('Información').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('info')))
-            tab_friends = ui.label('Amigos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('friends')))
-            tab_photos = ui.label('Fotos').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('photos')))
-            tab_reels = ui.label('Reels').classes('text-md font-bold text-gray-500 hover:text-gray-800 pb-2 cursor-pointer').on('click', lambda: asyncio.create_task(change_tab('reels')))
+        tab_todo.on('click', lambda: asyncio.create_task(change_tab('todo')))
+        tab_info.on('click', lambda: asyncio.create_task(change_tab('info')))
+        tab_friends.on('click', lambda: asyncio.create_task(change_tab('friends')))
+        tab_photos.on('click', lambda: asyncio.create_task(change_tab('photos')))
+        tab_reels.on('click', lambda: asyncio.create_task(change_tab('reels')))
 
         await render_content()
